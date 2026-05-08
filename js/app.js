@@ -307,10 +307,10 @@ function applyGlobalIdentity() {
 function updateLogoForTheme(theme) {
     if(!appMetadata.logo_light) return;
     const logoSrc = theme === 'carbon-black' ? appMetadata.logo_dark : appMetadata.logo_light;
-    // Modified to relative pathing
-    document.getElementById('dom-nav-logo').src = `.${logoSrc}`;
-    document.getElementById('dom-hero-logo').src = `.${logoSrc}`;
-    document.getElementById('dom-favicon').href = `.${logoSrc}`;
+    
+    document.getElementById('dom-nav-logo').src = logoSrc;
+    document.getElementById('dom-hero-logo').src = logoSrc;
+    document.getElementById('dom-favicon').href = logoSrc;
 }
 
 function buildGamifiedBlueprint() {
