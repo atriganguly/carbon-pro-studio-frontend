@@ -166,6 +166,9 @@ async function checkEngineConnection() {
                 
                 // Fetch tool manifests if not yet loaded
                 if(allTools.length === 0) fetchTools();
+
+                // ⚡ FIX: Auto-unlock UI if a tool is open, ONLY on the transition to Online
+                if(currentTool && !isExecuting) renderTool(currentTool);
             }
             
             // Sync Diagnostics
@@ -178,9 +181,6 @@ async function checkEngineConnection() {
                     <div class="health-item"><div class="health-item-top"><span class="health-name">${key.charAt(0).toUpperCase() + key.slice(1)}</span><span class="health-status-label status-${data.status}">${data.status}</span></div><div class="health-path">${data.version} • ${data.type}</div></div>
                 `).join('');
             }
-            
-            // Auto-unlock UI if a tool is open
-            if(currentTool) renderTool(currentTool);
         }
     } catch (e) {
         if (engineConnected || (engineConnected === false && text && text.innerText !== "Engine Offline")) {
@@ -196,8 +196,8 @@ async function checkEngineConnection() {
             
             showToast("Connection to local engine lost.", "error");
             
-            // Auto-lock UI if a tool is open
-            if(currentTool) renderTool(currentTool);
+            // ⚡ FIX: Auto-lock UI if a tool is open, ONLY on transition to Offline
+            if(currentTool && !isExecuting) renderTool(currentTool);
         }
     }
 }
@@ -1184,3 +1184,4 @@ function initResizer() {
 }
 
 init();
+connectSocket(); // Ensure the socket connects
