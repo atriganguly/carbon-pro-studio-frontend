@@ -16,7 +16,7 @@ let logBuffer = [];
 let logTimer = null;
 let analysisTimeout = null;
 let systemHealth = { status: "scanning", dependencies: {} };
-let extractedLayers = [];
+let extractedLayers = []; // Now stores objects: {layer: "Name", files: ["a.glb", "b.glb"]}
 let extractedAssets = []; // ⚡ NEW: Stores intercepted URLs from Ghost Scout
 let currentContextPath = "";
 
@@ -912,10 +912,20 @@ function connectSocket() {
             currentContextPath = line.substring(line.indexOf('[UI_CONTEXT_PATH]') + 17).trim();
             return; 
         }
+        
+        // ⚡ UPGRADED: Safely parse JSON payloads for layer extraction
         if (line.includes('[UI_EDIT_ROW]')) {
-            extractedLayers.push(line.substring(line.indexOf('[UI_EDIT_ROW]') + 13).trim());
+            try {
+                const payloadStr = line.substring(line.indexOf('[UI_EDIT_ROW]') + 13).trim();
+                const payload = JSON.parse(payloadStr);
+                extractedLayers.push(payload);
+            } catch (err) {
+                // Fallback for older flat strings
+                extractedLayers.push({layer: line.substring(line.indexOf('[UI_EDIT_ROW]') + 13).trim(), files: []});
+            }
             return; 
         }
+        
         // ⚡ NEW: Capture the Ghost Scout interactive UI payload
         if (line.includes('[UI_SELECT_ROW]')) {
             extractedAssets.push(line.substring(line.indexOf('[UI_SELECT_ROW]') + 15).trim());
@@ -1021,19 +1031,32 @@ function renderAssetSelector() {
     });
 }
 
+// ⚡ UPGRADED: Renders the Extractor UI with cross-referenced file badges
 function renderExtractorResults() {
     const existing = document.getElementById('vdb-extractor-results');
     if (existing) existing.remove();
     
     const arrowIcon = IconFactory.getIcon('ph-arrow-right-duotone', '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>', '16px');
 
-    let rows = extractedLayers.map(layer => `
+    let rows = extractedLayers.map(item => {
+        const layer = typeof item === 'string' ? item : item.layer;
+        const files = item.files || [];
+        const count = files.length;
+        const tooltip = files.join('&#10;');
+        
+        const badge = count > 0 ? `<span title="${tooltip}" style="font-size:9px; font-weight:700; background:var(--bg-surface); border:1px solid var(--border-subtle); padding:2px 6px; border-radius:4px; margin-left:8px; color:var(--text-secondary); cursor:help;">${count} File${count > 1 ? 's' : ''}</span>` : '';
+        
+        return `
         <div class="layer-mapping-row">
-            <div class="layer-name-tag" style="flex:1;">${layer}</div>
+            <div class="layer-name-tag" style="flex:1; display:flex; align-items:center; justify-content:space-between;">
+                <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${layer}</span>
+                ${badge}
+            </div>
             <span style="color:var(--text-secondary); opacity:0.5;">${arrowIcon}</span>
             <input type="text" class="liquid-input layer-map-input" data-original="${layer}" placeholder="New name (leave blank to retain)" style="flex:1;">
         </div>
-    `).join('');
+        `;
+    }).join('');
 
     const searchIcon = IconFactory.getIcon('ph-magnifying-glass-duotone', '<svg width="18" height="18"><use href="#icon-doc.text.magnifyingglass"></use></svg>', '18px');
 
@@ -1059,7 +1082,8 @@ function renderExtractorResults() {
     setTimeout(() => { document.querySelector('.workspace-scroll-area').scrollBy({ top: 600, behavior: 'smooth' }); }, 100);
 
     document.getElementById('btn-copy-layers').addEventListener('click', () => {
-        navigator.clipboard.writeText(extractedLayers.join('\n'));
+        const textToCopy = extractedLayers.map(item => typeof item === 'string' ? item : item.layer).join('\n');
+        navigator.clipboard.writeText(textToCopy);
         showToast("Copied original layers to clipboard!", "success");
     });
     document.getElementById('btn-update-layers').addEventListener('click', showOverwriteModal);
