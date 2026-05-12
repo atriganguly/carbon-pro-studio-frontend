@@ -1042,7 +1042,7 @@ function renderAssetSelector() {
     });
 }
 
-// ⚡ PHASE 2: Overhauled Extractor UI with Explicit Material Tagging
+// ⚡ PHASE 1 & 2: Overhauled Extractor UI with Explicit Material Tagging, Grid Layout & VJSON State Mapping
 function renderExtractorResults() {
     const existing = document.getElementById('vdb-extractor-results');
     if (existing) existing.remove();
@@ -1050,17 +1050,35 @@ function renderExtractorResults() {
     const tagIcon = IconFactory.getIcon('ph-tag-duotone', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>', '18px');
     const arrowIcon = IconFactory.getIcon('ph-arrow-right-duotone', '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>', '16px');
 
+    // ⚡ FIX: Evaluate if a VJSON was loaded via the input
+    const vjsonInput = document.getElementById('input-vjson_template');
+    const hasVjson = vjsonInput && vjsonInput.value.trim() !== "";
+
     let archetypesHtml = '';
-    if (vjsonArchetypes.length > 0) {
-        let archRows = vjsonArchetypes.map(arch => `
-            <div class="layer-mapping-row archetype-row" data-name="${arch}" style="background:var(--bg-input); padding: 8px 12px; border-radius:8px; margin-bottom:8px;">
-                <div class="layer-name-tag" style="flex:1; border:none; padding:0; background:transparent;">${arch}</div>
-                <div class="segmented-control" style="width: 140px; height: 32px;">
-                    <button type="button" class="segment-btn active" data-val="Metal" onclick="this.parentElement.querySelectorAll('.segment-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');">Metal</button>
-                    <button type="button" class="segment-btn" data-val="Stone" onclick="this.parentElement.querySelectorAll('.segment-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');">Stone</button>
+    
+    // ⚡ FIX: Render the VJSON card if ANY VJSON is loaded OR if archetypes were extracted
+    if (hasVjson || vjsonArchetypes.length > 0) {
+        let archRows = '';
+        
+        if (vjsonArchetypes.length > 0) {
+            archRows = vjsonArchetypes.map(arch => `
+                <div class="layer-mapping-row archetype-row" data-name="${arch}" style="display: grid; grid-template-columns: 1fr 140px; gap: 16px; align-items: center; background:var(--bg-input); padding: 8px 12px; border-radius:8px; margin-bottom:8px;">
+                    <div class="layer-name-tag" style="font-family: inherit; font-size: 13px; font-weight: 600; border:none; padding:0; background:transparent;">${arch}</div>
+                    <div class="segmented-control" style="height: 32px;">
+                        <button type="button" class="segment-btn active" data-val="Metal" onclick="this.parentElement.querySelectorAll('.segment-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');">Metal</button>
+                        <button type="button" class="segment-btn" data-val="Stone" onclick="this.parentElement.querySelectorAll('.segment-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');">Stone</button>
+                    </div>
                 </div>
-            </div>
-        `).join('');
+            `).join('');
+        } else {
+            // ⚡ FIX: Render beautiful empty state informing the user the loaded VJSON has no existing configs
+            archRows = `
+                <div style="padding: 12px; color: var(--text-secondary); font-size: 12px; font-style: italic; background:var(--bg-input); border-radius:8px; margin-bottom:8px; border: 1px dashed var(--border-subtle);">
+                    No existing taxonomies found in this template. A fresh configurator will be generated.
+                </div>
+            `;
+        }
+        
         archetypesHtml = `
             <div style="margin-bottom: 24px;">
                 <div class="preview-list-header">VJSON Archetypes</div>
@@ -1080,21 +1098,18 @@ function renderExtractorResults() {
         // Native fallback heuristic just for initial UI state
         const isStone = ['diamond', 'stone', 'gem', 'asscher', 'round', 'pear', 'oval', 'emerald', 'cushion', 'radiant', 'princess', 'marquise'].some(k => layer.toLowerCase().includes(k));
         
+        // ⚡ FIX: Applied CSS Grid layout & Sans-serif typography override for precision spacing
         return `
-        <div class="layer-mapping-row layer-row" data-original="${layer}" style="flex-wrap: wrap; gap: 8px; background:var(--bg-input); padding: 8px 12px; border-radius:8px; margin-bottom: 8px;">
-            <div style="display:flex; flex:1; min-width: 250px; align-items:center; justify-content:space-between;">
-                <div class="layer-name-tag" style="flex:1; border:none; padding:0; background:transparent;">
-                    <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${layer}</span>
-                    ${badge}
-                </div>
+        <div class="layer-mapping-row layer-row" data-original="${layer}" style="display: grid; grid-template-columns: 2.5fr 40px 2.5fr 140px; gap: 16px; align-items: center; background:var(--bg-input); padding: 8px 12px; border-radius:8px; margin-bottom: 8px;">
+            <div class="layer-name-tag" style="font-family: inherit; font-size: 13px; font-weight: 600; border:none; padding:0; background:transparent; display: flex; align-items: center; justify-content: space-between;">
+                <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${layer}</span>
+                ${badge}
             </div>
-            <div style="display:flex; align-items:center; gap: 12px; flex:2; min-width: 300px;">
-                <span style="color:var(--text-secondary); opacity:0.5;">${arrowIcon}</span>
-                <input type="text" class="liquid-input layer-map-input" data-original="${layer}" placeholder="New name (leave blank to retain)" style="flex:1; height:32px; line-height:30px;">
-                <div class="segmented-control" style="width: 140px; height: 32px; flex-shrink:0;">
-                    <button type="button" class="segment-btn ${!isStone ? 'active' : ''}" data-val="Metal" onclick="this.parentElement.querySelectorAll('.segment-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');">Metal</button>
-                    <button type="button" class="segment-btn ${isStone ? 'active' : ''}" data-val="Stone" onclick="this.parentElement.querySelectorAll('.segment-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');">Stone</button>
-                </div>
+            <div style="display:flex; justify-content: center; color:var(--text-secondary); opacity:0.5;">${arrowIcon}</div>
+            <input type="text" class="liquid-input layer-map-input" data-original="${layer}" placeholder="New name (leave blank to retain)" style="height:32px; line-height:30px; min-width: 0;">
+            <div class="segmented-control" style="height: 32px; min-width: 140px;">
+                <button type="button" class="segment-btn ${!isStone ? 'active' : ''}" data-val="Metal" onclick="this.parentElement.querySelectorAll('.segment-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');">Metal</button>
+                <button type="button" class="segment-btn ${isStone ? 'active' : ''}" data-val="Stone" onclick="this.parentElement.querySelectorAll('.segment-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');">Stone</button>
             </div>
         </div>
         `;
@@ -1172,7 +1187,7 @@ async function triggerDirectUpdater(isOverwrite) {
     const directMap = {};
     let hasChanges = false;
     
-    // ⚡ PHASE 3: Construct the deterministic taxonomy mapping payload
+    // Construct the deterministic taxonomy mapping payload
     const taxonomyMap = { archetypes: {}, layers: {} };
     
     document.querySelectorAll('.archetype-row').forEach(row => {
