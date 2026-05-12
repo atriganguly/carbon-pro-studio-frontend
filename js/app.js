@@ -557,12 +557,12 @@ function renderTool(tool) {
     }
 
     let gridHtml = '';
-    const fileIcon = IconFactory.getIcon('ph-file-duotone', '<svg width="16" height="16"><use href="#icon-file"></use></svg>', '16px');
-    const folderIcon = IconFactory.getIcon('ph-folder-duotone', '<svg width="16" height="16"><use href="#icon-folder"></use></svg>', '16px');
+    const fileIcon = IconFactory.getIcon('ph-file-duotone', '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>', '16px');
+    const folderIcon = IconFactory.getIcon('ph-folder-duotone', '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>', '16px');
 
     for (const [groupName, inputs] of Object.entries(groups)) {
         const inputsHtml = inputs.map(i => {
-            if (i.type === 'hidden') return `<input type="hidden" id="input-${i.id}" value="${i.default}">`;
+            if (i.type === 'hidden') return `<input type="hidden" id="input-${i.id}" value="${i.default}" class="app-input">`;
             
             const infoCol = `<div class="form-info"><div class="form-label">${i.label}</div><div class="form-hint">${i.hint || ''}</div></div>`;
             let ctrl = '';
@@ -576,33 +576,42 @@ function renderTool(tool) {
                     const segments = i.options.map(opt => {
                         let activeCls = (opt.value === i.default) ? 'active' : '';
                         let disabledAttr = '';
-                        
-                        // ⚡ DYNAMIC UI LOCKDOWN: Grey out Rhino if missing from OS
                         if (opt.value === 'rhino' && (!systemHealth.dependencies['rhino'] || systemHealth.dependencies['rhino'].status !== 'ok')) {
                             disabledAttr = 'disabled title="Rhino 8 Core not detected on this OS"';
-                            activeCls = ''; // Prevent it from being visually active if disabled
+                            activeCls = '';
                         }
-                        
                         return `<button type="button" class="segment-btn ${activeCls}" data-target="input-${i.id}" data-val="${opt.value}" ${disabledAttr}>${opt.label.split('(')[0].trim()}</button>`;
                     }).join('');
                     ctrl = `<input type="hidden" id="input-${i.id}" value="${i.default}" class="app-input"><div class="segmented-control">${segments}</div>`;
                 } else {
                     const opts = i.options.map(opt => {
                         let disabledAttr = '';
-                        
-                        // ⚡ DYNAMIC UI LOCKDOWN: Grey out Rhino if missing from OS
                         if (opt.value === 'rhino' && (!systemHealth.dependencies['rhino'] || systemHealth.dependencies['rhino'].status !== 'ok')) {
                             disabledAttr = 'disabled title="Rhino 8 Core not detected on this OS"';
                         }
-                        
                         return `<option value="${opt.value}" ${opt.value === i.default ? 'selected' : ''} ${disabledAttr}>${opt.label}</option>`;
                     }).join('');
                     ctrl = `<select id="input-${i.id}" class="liquid-input app-input">${opts}</select>`;
                 }
             } else if (['file', 'file_or_folder', 'folder'].includes(i.type)) {
-                // Ensure UI is greyed out if no connection
                 const btnLock = !engineConnected ? 'disabled' : '';
                 let btns = '';
+
+                // ⚡ SMART INLINE TOGGLES FOR EXTRACTOR
+                if (i.id === 'input_path' && currentTool.id === 'layer-name-extractor') {
+                    const scanInput = currentTool.inputs.find(x => x.id === 'scan_subfolders');
+                    const isActive = scanInput && scanInput.default === 'true' ? 'active' : '';
+                    const scanIcon = IconFactory.getIcon('ph-folders-duotone', '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>', '16px');
+                    btns += `<button type="button" class="path-btn path-toggle-btn ${isActive}" data-target="scan_subfolders" title="Toggle Scan Subfolders" ${btnLock}>${scanIcon}</button>`;
+                }
+                if (i.id === 'vjson_template' && currentTool.id === 'layer-name-extractor') {
+                    const syncInput = currentTool.inputs.find(x => x.id === 'sync_to_vjson');
+                    const isActive = syncInput && syncInput.default === 'true' ? 'active' : '';
+                    const syncIcon = IconFactory.getIcon('ph-arrows-left-right-duotone', '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 4l4 4-4 4M7 20l-4-4 4-4M21 8H7M3 16h14"></path></svg>', '16px');
+                    btns += `<button type="button" class="path-btn path-toggle-btn ${isActive}" data-target="sync_to_vjson" title="Toggle VJSON Sync" ${btnLock}>${syncIcon}</button>`;
+                }
+
+                // Selective Rendering for File/Folder Picker Icons
                 if (i.type === 'file' || i.type === 'file_or_folder') {
                     btns += `<button type="button" class="path-btn" data-target="${i.id}" data-type="file" title="Select File" ${btnLock}>${fileIcon}</button>`;
                 }
@@ -652,7 +661,7 @@ function setupDynamicModelDropdown() {
         
         let debounceTimer;
         const fetchModels = async (key) => {
-            if (!engineConnected) return; // Don't try if engine is offline
+            if (!engineConnected) return; 
             try {
                 selectEl.innerHTML = `<option value="">Detecting Vision Models...</option>`;
                 const res = await fetch(`${LOCAL_ENGINE_URL}/api/llm/models`, {
@@ -780,7 +789,8 @@ function bindDynamicEvents() {
             triggerRealtimeAnalysis(); 
         }); 
     });
-    document.querySelectorAll('.path-btn').forEach(btn => { 
+
+    document.querySelectorAll('.path-btn[data-type]').forEach(btn => { 
         btn.addEventListener('click', async (e) => { 
             if (isExecuting || !engineConnected) return; 
             const b = e.target.closest('.path-btn'); 
@@ -795,6 +805,27 @@ function bindDynamicEvents() {
             } 
         }); 
     });
+
+    // ⚡ BIND INLINE TOGGLE LOGIC
+    document.querySelectorAll('.path-toggle-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            if (isExecuting || !engineConnected) return;
+            const b = e.target.closest('.path-toggle-btn');
+            const targetId = b.dataset.target;
+            const targetInput = document.getElementById(`input-${targetId}`);
+            if (targetInput) {
+                const isChecked = targetInput.value === 'true';
+                targetInput.value = isChecked ? 'false' : 'true';
+                if (!isChecked) {
+                    b.classList.add('active');
+                } else {
+                    b.classList.remove('active');
+                }
+                triggerRealtimeAnalysis();
+            }
+        });
+    });
+
     document.querySelectorAll('.app-input').forEach(input => { 
         const eventType = input.tagName === 'SELECT' || input.type === 'checkbox' || input.type === 'range' ? 'change' : 'keyup'; 
         
@@ -867,7 +898,7 @@ async function runTool() {
     isExecuting = true;
     extractedLayers = [];
     extractedAssets = []; 
-    vjsonArchetypes = []; // ⚡ Clear previous archetypes
+    vjsonArchetypes = []; 
     currentContextPath = "";
     
     const btn = document.getElementById('exec-btn'); btn.className = "btn-primary btn-danger"; document.getElementById('btn-spinner').style.display = 'block'; document.getElementById('btn-text').innerText = "Halt Protocol"; document.getElementById('status-dot').className = 'status-indicator running'; document.getElementById('status-text').innerText = 'Protocol Active';
@@ -886,7 +917,6 @@ async function runTool() {
         currentTool.inputs.forEach(i => { const el = document.getElementById(`input-${i.id}`); if(el) params[i.id] = i.type === 'checkbox' ? el.checked : el.value; });
     }
     
-    // ⚡ ZERO HARDCODING: Inject context meta to prevent script-side hardcoding
     params['_pipeline_metadata'] = {
         post_processor: currentTool.post_processor || null,
         action_target: currentTool.action_target_tool || null
@@ -1031,7 +1061,7 @@ function renderAssetSelector() {
     });
 }
 
-// ⚡ PHASE 1 & 2: Overhauled Extractor UI with Explicit Material Tagging & Container Isolation
+// ⚡ PHASE 1 & 2: Overhauled Extractor UI with De-coupled Components & Compact Styling
 function renderExtractorResults() {
     const existing = document.getElementById('vdb-extractor-results');
     if (existing) existing.remove();
@@ -1040,8 +1070,10 @@ function renderExtractorResults() {
 
     function detectMaterialTag(name) {
         const stoneKeys = ['diamond', 'stone', 'gem', 'asscher', 'round', 'pear', 'oval', 'emerald', 'cushion', 'radiant', 'princess', 'marquise', 'baguette', 'trillion', 'cz', 'sapphire', 'ruby', 'moissanite', 'center', 'side'];
+        const metalKeys = ['metal', 'gold', 'silver', 'plat', 'shank', 'head', 'prong', 'bezel', 'basket', 'setting', 'band', 'ring'];
         const n = name.toLowerCase();
         if (stoneKeys.some(k => n.includes(k))) return 'Stone';
+        if (metalKeys.some(k => n.includes(k))) return 'Metal';
         return 'Metal'; 
     }
 
@@ -1053,16 +1085,16 @@ function renderExtractorResults() {
         extMap.set(layer, files);
     });
 
-    // ⚡ CONTAINER 1: VJSON ARCHETYPES
+    // ⚡ CONTAINER 1: VJSON MATERIAL MAPPING
     let vjsonHtml = '';
     if (vjsonSet.size > 0) {
         let rows = Array.from(vjsonSet).sort().map(name => {
             let defaultTag = detectMaterialTag(name);
             let syncAttr = extMap.has(name) ? `data-sync-id="${name}"` : '';
             return `
-            <div class="layer-mapping-row vjson-row" data-name="${name}" style="display:flex; gap:16px; align-items:center; background:var(--bg-input); padding:8px 12px; border-radius:8px; margin-bottom:8px;">
-                <div class="layer-name-tag" style="flex:1; border:none; padding:0; background:transparent; font-weight:600; font-size:13px;" title="${name}">${name}</div>
-                <div class="segmented-control vjson-toggle" style="height:32px; width:140px; flex-shrink:0;" ${syncAttr}>
+            <div class="layer-mapping-row vjson-row" data-name="${name}" style="display:flex; gap:12px; align-items:center; background:var(--bg-input); padding:6px 12px; border-radius:8px; margin-bottom:6px;">
+                <div class="layer-name-tag" style="flex:1; border:none; padding:0; background:transparent; font-weight:600; font-size:13px; max-width:24ch; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${name}">${name}</div>
+                <div class="segmented-control vjson-toggle" style="height:28px; width:120px; flex-shrink:0;" ${syncAttr}>
                     <button type="button" class="segment-btn metal-toggle ${defaultTag === 'Metal' ? 'active' : ''}" data-val="Metal">Metal</button>
                     <button type="button" class="segment-btn stone-toggle ${defaultTag === 'Stone' ? 'active' : ''}" data-val="Stone">Stone</button>
                 </div>
@@ -1070,12 +1102,12 @@ function renderExtractorResults() {
         }).join('');
         vjsonHtml = `
         <div style="margin-bottom: 24px;">
-            <div class="preview-list-header" style="margin-bottom: 12px; color:var(--tool-accent);">VJSON Archetypes</div>
+            <div class="preview-list-header" style="margin-bottom: 8px; color:var(--tool-accent);">VJSON Material Mapping</div>
             ${rows}
         </div>`;
     }
 
-    // ⚡ CONTAINER 2: EXTRACTED MODEL LAYERS
+    // ⚡ CONTAINER 2: EXTRACTED MATERIAL NAMES
     let extHtml = '';
     if (extMap.size > 0) {
         let rows = Array.from(extMap.keys()).sort().map(name => {
@@ -1084,14 +1116,14 @@ function renderExtractorResults() {
             let defaultTag = detectMaterialTag(name);
             let syncAttr = vjsonSet.has(name) ? `data-sync-id="${name}"` : '';
             const tooltip = files.join('&#10;');
-            const badge = count > 0 ? `<span title="${tooltip}" style="font-size:9px; font-weight:700; background:var(--bg-surface-elevated); border:1px solid var(--border-subtle); padding:2px 6px; border-radius:4px; color:var(--text-secondary); cursor:help;">${count} File${count > 1 ? 's' : ''}</span>` : `<span style="font-size:9px; font-weight:700; color:var(--text-secondary); opacity:0.5;">0 Files</span>`;
+            const badge = count > 0 ? `<span title="${tooltip}" style="font-size:9px; font-weight:700; background:var(--bg-surface-elevated); border:1px solid var(--border-subtle); padding:2px 6px; border-radius:4px; color:var(--text-secondary); cursor:help;">${count}</span>` : `<span style="font-size:9px; font-weight:700; color:var(--text-secondary); opacity:0.5;">0</span>`;
 
             return `
-            <div class="layer-mapping-row ext-row" data-name="${name}" style="display:flex; gap:16px; align-items:center; background:var(--bg-input); padding:8px 12px; border-radius:8px; margin-bottom:8px;">
-                <div class="layer-name-tag" style="flex:1; border:none; padding:0; background:transparent; font-weight:600; font-size:13px; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${name}">${name}</div>
-                <div style="width:70px; text-align:center;">${badge}</div>
-                <input type="text" class="liquid-input layer-map-input" data-original="${name}" ${syncAttr} placeholder="New name (leave blank to retain)" style="height:32px; flex:1; min-width:0; padding:0 10px;">
-                <div class="segmented-control ext-toggle" style="height:32px; width:140px; flex-shrink:0;" ${syncAttr}>
+            <div class="layer-mapping-row ext-row" data-name="${name}" style="display:flex; gap:12px; align-items:center; background:var(--bg-input); padding:6px 12px; border-radius:8px; margin-bottom:6px;">
+                <div class="layer-name-tag" style="flex:0 0 auto; width:24ch; border:none; padding:0; background:transparent; font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${name}">${name}</div>
+                <div style="width:30px; text-align:center; flex-shrink:0;">${badge}</div>
+                <input type="text" class="liquid-input layer-map-input" data-original="${name}" ${syncAttr} placeholder="New name..." style="height:28px; width:24ch; flex-shrink:0; padding:0 8px; font-size:12px;">
+                <div class="segmented-control ext-toggle" style="height:28px; width:120px; flex-shrink:0; margin-left:auto;" ${syncAttr}>
                     <button type="button" class="segment-btn metal-toggle ${defaultTag === 'Metal' ? 'active' : ''}" data-val="Metal">Metal</button>
                     <button type="button" class="segment-btn stone-toggle ${defaultTag === 'Stone' ? 'active' : ''}" data-val="Stone">Stone</button>
                 </div>
@@ -1099,7 +1131,7 @@ function renderExtractorResults() {
         }).join('');
         extHtml = `
         <div>
-            <div class="preview-list-header" style="margin-bottom: 12px; color:var(--tool-accent);">Extracted Model Layers</div>
+            <div class="preview-list-header" style="margin-bottom: 8px; color:var(--tool-accent);">Extracted Material Names</div>
             ${rows}
         </div>`;
     }
@@ -1108,18 +1140,20 @@ function renderExtractorResults() {
         extHtml = `<div class="empty-preview" style="padding:40px 0;"><span>No taxonomy data found.</span></div>`;
     }
 
+    const copyIcon = IconFactory.getIcon('ph-copy-duotone', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>', '18px');
+
     const html = `
     <div id="vdb-extractor-results" class="results-card" style="margin-top:20px;">
         <div class="results-header">
             <div class="results-title">${tagIcon} Taxonomy Configuration</div>
+            <button class="icon-btn" id="btn-copy-layers" title="Copy extracted material names to clipboard" style="color:var(--tool-accent);">${copyIcon}</button>
         </div>
         <div class="results-body">
             ${vjsonHtml}
             ${extHtml}
         </div>
-        <div class="results-footer" style="gap:10px;">
-            <button class="btn-secondary" id="btn-copy-layers">Copy Original Layers</button>
-            <button class="btn-primary" id="btn-update-layers" style="height:38px;">Apply Config & Sync...</button>
+        <div class="results-footer" style="gap:10px; justify-content: flex-end;">
+            <button class="btn-primary" id="btn-update-layers" style="height:38px;">Apply Config</button>
         </div>
     </div>
     `;
@@ -1138,7 +1172,6 @@ function renderExtractorResults() {
                     toggleGroup.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('active'));
                     this.classList.add('active');
 
-                    // Synchronize counterpart if linked
                     const syncId = toggleGroup.getAttribute('data-sync-id');
                     if (syncId) {
                         const isVjson = row.classList.contains('vjson-row');
@@ -1157,7 +1190,6 @@ function renderExtractorResults() {
         if (nameInput) {
             nameInput.addEventListener('input', function() {
                 const val = this.value.trim();
-                // Break sync linkage if user begins typing a custom override
                 if (val.length > 0) {
                     if (toggleGroup) toggleGroup.removeAttribute('data-sync-id');
                     this.removeAttribute('data-sync-id');
@@ -1170,17 +1202,21 @@ function renderExtractorResults() {
     });
 
     document.getElementById('btn-copy-layers').addEventListener('click', () => {
-        const textToCopy = extractedLayers.map(item => typeof item === 'string' ? item : item.layer).join('\n');
+        let textToCopy = "=== VDB CARBON: LAYER & MATERIAL REPORT ===\n\n";
+        const sortedKeys = Array.from(extMap.keys()).sort();
+        sortedKeys.forEach(layer => {
+            const fileCount = extMap.get(layer).length;
+            textToCopy += `- ${layer} (Found in ${fileCount} files)\n`;
+        });
         navigator.clipboard.writeText(textToCopy);
-        showToast("Copied original layers to clipboard!", "success");
+        showToast("Copied extracted material names to clipboard!", "success");
     });
     document.getElementById('btn-update-layers').addEventListener('click', showOverwriteModal);
 }
 
 function showOverwriteModal() {
-    // Determine if we ONLY need to sync VJSON based on DOM state
     const elSync = document.getElementById('input-sync_to_vjson');
-    const isSyncVjsonOn = elSync ? elSync.checked : false;
+    const isSyncVjsonOn = elSync ? (elSync.value === 'true') : false;
     let hasChanges = Array.from(document.querySelectorAll('.layer-map-input')).some(input => input.value.trim() !== "");
 
     if (!hasChanges && !isSyncVjsonOn) {
@@ -1188,7 +1224,6 @@ function showOverwriteModal() {
         return;
     }
 
-    // Bypass File Modification Modal completely if we are exclusively pushing a VJSON Sync
     if (!hasChanges && isSyncVjsonOn) {
         triggerDirectUpdater(false); 
         return;
@@ -1233,14 +1268,12 @@ async function triggerDirectUpdater(isOverwrite) {
     let hasChanges = false;
     const taxonomyMap = { archetypes: {}, layers: {} };
     
-    // Aggregate VJSON Mappings
     document.querySelectorAll('.vjson-row').forEach(row => {
         const name = row.dataset.name;
         const toggle = row.querySelector('.vjson-toggle .active');
         if (toggle) taxonomyMap.archetypes[name] = toggle.dataset.val;
     });
 
-    // Aggregate Extracted Mesh Mappings
     document.querySelectorAll('.ext-row').forEach(row => {
         const name = row.dataset.name;
         const toggle = row.querySelector('.ext-toggle .active');
@@ -1259,12 +1292,12 @@ async function triggerDirectUpdater(isOverwrite) {
     });
 
     const elSync = document.getElementById('input-sync_to_vjson');
-    const isSyncVjsonOn = elSync ? elSync.checked : false;
+    const isSyncVjsonOn = elSync ? (elSync.value === 'true') : false;
 
     let isVjsonOnly = (!hasChanges && isSyncVjsonOn);
 
     let outDir = "";
-    if(!isOverwrite && !isVjsonOnly) {
+    if(!isOverwrite) {
         const res = await fetch(`${LOCAL_ENGINE_URL}/api/browse?type=folder`);
         const data = await res.json();
         if(!data.path) { showToast("Export cancelled.", "info"); return; }
@@ -1288,7 +1321,6 @@ async function triggerDirectUpdater(isOverwrite) {
         const elOverwrite = document.getElementById('input-overwrite_mode');
         if(elOverwrite) elOverwrite.value = isOverwrite ? "true" : "false";
 
-        // Inject Smart Bypass Protocols to Engine Backend
         const elFromExt = document.getElementById('input-from_extractor');
         if(elFromExt) elFromExt.value = "true";
         const elVjsonOnly = document.getElementById('input-vjson_only_mode');
@@ -1296,9 +1328,8 @@ async function triggerDirectUpdater(isOverwrite) {
 
         const elSyncUpdater = document.getElementById('input-sync_to_vjson');
         if(elSyncUpdater) {
-            elSyncUpdater.checked = isSyncVjsonOn;
-            // Force DOM toggle visual update
-            if(isSyncVjsonOn) elSyncUpdater.nextElementSibling.classList.add('active'); 
+            elSyncUpdater.value = isSyncVjsonOn ? 'true' : 'false';
+            if (elSyncUpdater.type === 'checkbox') elSyncUpdater.checked = isSyncVjsonOn;
         }
 
         const elInput = document.getElementById('input-input_path');
