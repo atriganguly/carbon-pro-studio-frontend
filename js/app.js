@@ -16,8 +16,9 @@ let logBuffer = [];
 let logTimer = null;
 let analysisTimeout = null;
 let systemHealth = { status: "scanning", dependencies: {} };
-let extractedLayers = []; // Now stores objects: {layer: "Name", files: ["a.glb", "b.glb"]}
-let extractedAssets = []; // ⚡ NEW: Stores intercepted URLs from Ghost Scout
+let extractedLayers = []; // Stores objects: {layer: "Name", files: ["a.glb", "b.glb"]}
+let extractedAssets = []; // Stores intercepted URLs from Ghost Scout
+let vjsonArchetypes = []; // ⚡ NEW: Stores template variations from loaded VJSON
 let currentContextPath = "";
 
 // 3D Engine State
@@ -774,7 +775,10 @@ function bindDynamicEvents() {
         btn.addEventListener('click', (e) => { 
             if (e.target.disabled) return; 
             const val = e.target.dataset.val; 
-            document.getElementById(e.target.dataset.target).value = val; 
+            const targetId = e.target.dataset.target;
+            if (targetId) {
+                document.getElementById(targetId).value = val; 
+            }
             e.target.parentNode.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('active')); 
             e.target.classList.add('active'); 
             triggerRealtimeAnalysis(); 
@@ -866,7 +870,8 @@ async function runTool() {
 
     isExecuting = true;
     extractedLayers = [];
-    extractedAssets = []; // ⚡ Clear previous ghost scout selections
+    extractedAssets = []; 
+    vjsonArchetypes = []; // ⚡ Clear previous archetypes
     currentContextPath = "";
     
     const btn = document.getElementById('exec-btn'); btn.className = "btn-primary btn-danger"; document.getElementById('btn-spinner').style.display = 'block'; document.getElementById('btn-text').innerText = "Halt Protocol"; document.getElementById('status-dot').className = 'status-indicator running'; document.getElementById('status-text').innerText = 'Protocol Active';
@@ -912,6 +917,12 @@ function connectSocket() {
             currentContextPath = line.substring(line.indexOf('[UI_CONTEXT_PATH]') + 17).trim();
             return; 
         }
+
+        // ⚡ PHASE 1 INTEGRATION: Capture VJSON Archetypes for the UI
+        if (line.includes('[UI_VJSON_VAR]')) {
+            vjsonArchetypes.push(line.substring(line.indexOf('[UI_VJSON_VAR]') + 14).trim());
+            return;
+        }
         
         // ⚡ UPGRADED: Safely parse JSON payloads for layer extraction
         if (line.includes('[UI_EDIT_ROW]')) {
@@ -926,7 +937,7 @@ function connectSocket() {
             return; 
         }
         
-        // ⚡ NEW: Capture the Ghost Scout interactive UI payload
+        // Capture the Ghost Scout interactive UI payload
         if (line.includes('[UI_SELECT_ROW]')) {
             extractedAssets.push(line.substring(line.indexOf('[UI_SELECT_ROW]') + 15).trim());
             return;
@@ -952,7 +963,7 @@ function connectSocket() {
     socket.onclose = () => setTimeout(connectSocket, 2000);
 }
 
-// ⚡ NEW: The Dynamic UI rendering function for the Ghost Scout payload
+// ⚡ The Dynamic UI rendering function for the Ghost Scout payload
 function renderAssetSelector() {
     const existing = document.getElementById('vdb-asset-selector-results');
     if (existing) existing.remove();
@@ -1031,14 +1042,34 @@ function renderAssetSelector() {
     });
 }
 
-// ⚡ UPGRADED: Renders the Extractor UI with cross-referenced file badges
+// ⚡ PHASE 2: Overhauled Extractor UI with Explicit Material Tagging
 function renderExtractorResults() {
     const existing = document.getElementById('vdb-extractor-results');
     if (existing) existing.remove();
     
+    const tagIcon = IconFactory.getIcon('ph-tag-duotone', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>', '18px');
     const arrowIcon = IconFactory.getIcon('ph-arrow-right-duotone', '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>', '16px');
 
-    let rows = extractedLayers.map(item => {
+    let archetypesHtml = '';
+    if (vjsonArchetypes.length > 0) {
+        let archRows = vjsonArchetypes.map(arch => `
+            <div class="layer-mapping-row archetype-row" data-name="${arch}" style="background:var(--bg-input); padding: 8px 12px; border-radius:8px; margin-bottom:8px;">
+                <div class="layer-name-tag" style="flex:1; border:none; padding:0; background:transparent;">${arch}</div>
+                <div class="segmented-control" style="width: 140px; height: 32px;">
+                    <button type="button" class="segment-btn active" data-val="Metal" onclick="this.parentElement.querySelectorAll('.segment-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');">Metal</button>
+                    <button type="button" class="segment-btn" data-val="Stone" onclick="this.parentElement.querySelectorAll('.segment-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');">Stone</button>
+                </div>
+            </div>
+        `).join('');
+        archetypesHtml = `
+            <div style="margin-bottom: 24px;">
+                <div class="preview-list-header">VJSON Archetypes</div>
+                <div style="display:flex; flex-direction:column;">${archRows}</div>
+            </div>
+        `;
+    }
+
+    let layersRows = extractedLayers.map(item => {
         const layer = typeof item === 'string' ? item : item.layer;
         const files = item.files || [];
         const count = files.length;
@@ -1046,34 +1077,47 @@ function renderExtractorResults() {
         
         const badge = count > 0 ? `<span title="${tooltip}" style="font-size:9px; font-weight:700; background:var(--bg-surface); border:1px solid var(--border-subtle); padding:2px 6px; border-radius:4px; margin-left:8px; color:var(--text-secondary); cursor:help;">${count} File${count > 1 ? 's' : ''}</span>` : '';
         
+        // Native fallback heuristic just for initial UI state
+        const isStone = ['diamond', 'stone', 'gem', 'asscher', 'round', 'pear', 'oval', 'emerald', 'cushion', 'radiant', 'princess', 'marquise'].some(k => layer.toLowerCase().includes(k));
+        
         return `
-        <div class="layer-mapping-row">
-            <div class="layer-name-tag" style="flex:1; display:flex; align-items:center; justify-content:space-between;">
-                <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${layer}</span>
-                ${badge}
+        <div class="layer-mapping-row layer-row" data-original="${layer}" style="flex-wrap: wrap; gap: 8px; background:var(--bg-input); padding: 8px 12px; border-radius:8px; margin-bottom: 8px;">
+            <div style="display:flex; flex:1; min-width: 250px; align-items:center; justify-content:space-between;">
+                <div class="layer-name-tag" style="flex:1; border:none; padding:0; background:transparent;">
+                    <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${layer}</span>
+                    ${badge}
+                </div>
             </div>
-            <span style="color:var(--text-secondary); opacity:0.5;">${arrowIcon}</span>
-            <input type="text" class="liquid-input layer-map-input" data-original="${layer}" placeholder="New name (leave blank to retain)" style="flex:1;">
+            <div style="display:flex; align-items:center; gap: 12px; flex:2; min-width: 300px;">
+                <span style="color:var(--text-secondary); opacity:0.5;">${arrowIcon}</span>
+                <input type="text" class="liquid-input layer-map-input" data-original="${layer}" placeholder="New name (leave blank to retain)" style="flex:1; height:32px; line-height:30px;">
+                <div class="segmented-control" style="width: 140px; height: 32px; flex-shrink:0;">
+                    <button type="button" class="segment-btn ${!isStone ? 'active' : ''}" data-val="Metal" onclick="this.parentElement.querySelectorAll('.segment-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');">Metal</button>
+                    <button type="button" class="segment-btn ${isStone ? 'active' : ''}" data-val="Stone" onclick="this.parentElement.querySelectorAll('.segment-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active');">Stone</button>
+                </div>
+            </div>
         </div>
         `;
     }).join('');
-
-    const searchIcon = IconFactory.getIcon('ph-magnifying-glass-duotone', '<svg width="18" height="18"><use href="#icon-doc.text.magnifyingglass"></use></svg>', '18px');
 
     const html = `
     <div id="vdb-extractor-results" class="results-card" style="margin-top:20px;">
         <div class="results-header">
             <div class="results-title">
-                ${searchIcon}
-                Extracted Taxonomies (${extractedLayers.length})
+                ${tagIcon}
+                Taxonomy Configuration
             </div>
         </div>
         <div class="results-body">
-            ${rows}
+            ${archetypesHtml}
+            <div>
+                <div class="preview-list-header">Extracted Model Layers</div>
+                ${layersRows}
+            </div>
         </div>
         <div class="results-footer" style="gap:10px;">
             <button class="btn-secondary" id="btn-copy-layers">Copy Original Layers</button>
-            <button class="btn-primary" id="btn-update-layers" style="height:38px;">Apply New Names...</button>
+            <button class="btn-primary" id="btn-update-layers" style="height:38px;">Apply Config & Sync...</button>
         </div>
     </div>
     `;
@@ -1127,13 +1171,37 @@ function showOverwriteModal() {
 async function triggerDirectUpdater(isOverwrite) {
     const directMap = {};
     let hasChanges = false;
-    document.querySelectorAll('.layer-map-input').forEach(input => {
-        const newName = input.value.trim();
-        const oldName = input.dataset.original;
-        if(newName && newName !== oldName) { directMap[oldName] = newName; hasChanges = true; }
+    
+    // ⚡ PHASE 3: Construct the deterministic taxonomy mapping payload
+    const taxonomyMap = { archetypes: {}, layers: {} };
+    
+    document.querySelectorAll('.archetype-row').forEach(row => {
+        const name = row.dataset.name;
+        const tag = row.querySelector('.segment-btn.active').dataset.val;
+        taxonomyMap.archetypes[name] = tag;
     });
 
-    if(!hasChanges) { showToast("No name changes provided. Operation cancelled.", "warning"); return; }
+    document.querySelectorAll('.layer-row').forEach(row => {
+        const oldName = row.dataset.original;
+        const input = row.querySelector('.layer-map-input');
+        const newName = input.value.trim();
+        const tag = row.querySelector('.segment-btn.active').dataset.val;
+        
+        if (newName && newName !== oldName) { 
+            directMap[oldName] = newName; 
+            hasChanges = true; 
+        }
+        
+        // Note: The VJSON Sync needs the taxonomy of the *new* name if renamed, otherwise the *old* name.
+        const effectiveName = (newName && newName !== oldName) ? newName : oldName;
+        taxonomyMap.layers[effectiveName] = tag;
+    });
+
+    // Provide safety bypass if we ONLY want to sync VJSON taxonomies without renaming 3D files.
+    if(!hasChanges && Object.keys(taxonomyMap.layers).length === 0) { 
+        showToast("No configuration changes detected. Operation cancelled.", "warning"); 
+        return; 
+    }
 
     let outDir = "";
     if(!isOverwrite) {
@@ -1153,6 +1221,10 @@ async function triggerDirectUpdater(isOverwrite) {
     setTimeout(() => {
         const elMap = document.getElementById('input-direct_map');
         if(elMap) elMap.value = JSON.stringify(directMap);
+        
+        // ⚡ Inject the new Deterministic Payload
+        const elTaxonomy = document.getElementById('input-taxonomy_map');
+        if(elTaxonomy) elTaxonomy.value = JSON.stringify(taxonomyMap);
         
         const elOverwrite = document.getElementById('input-overwrite_mode');
         if(elOverwrite) elOverwrite.value = isOverwrite ? "true" : "false";
