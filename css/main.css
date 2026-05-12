@@ -314,6 +314,21 @@ svg { display: block; max-width: 100%; max-height: 100%; }
 .segment-btn { flex: 1; height: 100%; background: transparent; border: none; font-size: 12px; font-weight: 700; color: var(--text-secondary); cursor: pointer; border-radius: 6px; transition: 0.15s ease-out; }
 .segment-btn.active { color: var(--text-primary); background: var(--bg-surface-elevated); box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
 
+/* ⚡ UNIQUE MATERIAL TAXONOMY STYLING ⚡ */
+.segment-btn.metal-toggle.active {
+    background: linear-gradient(135deg, #a1a1a6, #636366) !important;
+    color: #ffffff !important;
+    border-color: #c7c7cc !important;
+    box-shadow: 0 4px 10px rgba(161, 161, 166, 0.3) !important;
+}
+
+.segment-btn.stone-toggle.active {
+    background: linear-gradient(135deg, #64d2ff, #0a84ff) !important;
+    color: #ffffff !important;
+    border-color: #007aff !important;
+    box-shadow: 0 4px 10px rgba(10, 132, 255, 0.4) !important;
+}
+
 .path-picker-group { display: flex; background: var(--bg-input); border-radius: 8px; border: 1px solid var(--border-subtle); align-items: center; overflow: hidden; }
 .path-display { flex: 1; padding: 0 14px; font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; direction: rtl; text-align: left; font-family: ui-monospace, monospace; line-height: 38px; min-width: 0; }
 .path-display.has-value { color: var(--text-primary); font-weight: 600; }
