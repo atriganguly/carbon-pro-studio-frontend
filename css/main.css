@@ -316,17 +316,19 @@ svg { display: block; max-width: 100%; max-height: 100%; }
 
 /* ⚡ UNIQUE MATERIAL TAXONOMY STYLING ⚡ */
 .segment-btn.metal-toggle.active {
-    background: linear-gradient(135deg, #a1a1a6, #636366) !important;
+    background: linear-gradient(135deg, #FFDF73, #D4AF37, #996515) !important;
     color: #ffffff !important;
-    border-color: #c7c7cc !important;
-    box-shadow: 0 4px 10px rgba(161, 161, 166, 0.3) !important;
+    border-color: #B8860B !important;
+    box-shadow: inset 0 1px 2px rgba(255,255,255,0.6), 0 4px 12px rgba(212, 175, 55, 0.4) !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
 }
 
 .segment-btn.stone-toggle.active {
-    background: linear-gradient(135deg, #64d2ff, #0a84ff) !important;
-    color: #ffffff !important;
-    border-color: #007aff !important;
-    box-shadow: 0 4px 10px rgba(10, 132, 255, 0.4) !important;
+    background: linear-gradient(135deg, #FFFFFF 0%, #F0F8FF 40%, #E0F7FA 60%, #B2EBF2 100%) !important;
+    color: #005662 !important;
+    border-color: #80DEEA !important;
+    box-shadow: inset 0 1px 3px #ffffff, inset 0 -1px 2px rgba(0,0,0,0.05), 0 4px 12px rgba(128, 222, 234, 0.4) !important;
+    text-shadow: 0 1px 1px rgba(255,255,255,0.8);
 }
 
 .path-picker-group { display: flex; background: var(--bg-input); border-radius: 8px; border: 1px solid var(--border-subtle); align-items: center; overflow: hidden; }
@@ -337,6 +339,13 @@ svg { display: block; max-width: 100%; max-height: 100%; }
 .path-btn:last-child { border-right: none; }
 .path-btn:hover { background: var(--bg-input-hover); color: var(--tool-accent); }
 .path-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+/* ⚡ INLINE TOGGLE CSS ⚡ */
+.path-btn.path-toggle-btn.active {
+    color: var(--success);
+    background: var(--bg-input-hover);
+    border-color: color-mix(in srgb, var(--success) 30%, transparent);
+}
 
 .toggle-switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; display: inline-block; }
 .toggle-switch input { opacity: 0; width: 0; height: 0; }
