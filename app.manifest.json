@@ -1,7 +1,7 @@
 {
   "app_name": "Carbon Pro-Studio",
-  "version": "1.2.4",
-  "last_updated": "2026-05-12 - Unified Matrix Extractor UI & Sync Toggles",
+  "version": "1.2.5",
+  "last_updated": "2026-05-13 - Extractor UI Split & Active State Styling",
   "creator": "Atri Ganguly",
   "github_link": "https://github.com/atriganguly",
   "tagline": "Brilliance, Orchestrated.",
