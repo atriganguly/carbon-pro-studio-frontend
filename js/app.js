@@ -1137,16 +1137,16 @@ function renderExtractorResults() {
     const html = `
     <div id="vdb-extractor-results" class="results-card" style="margin-top:20px;">
         <div class="results-header">
-            <div class="results-title">${tagIcon} Taxonomy Orchestration</div>
+            <div class="results-title">${tagIcon} Material Taxonomy Configuration</div>
             <button class="icon-btn" id="btn-copy-layers" title="Copy extracted material names to clipboard" style="color:var(--tool-accent);">${copyIcon}</button>
         </div>
         <div class="results-body" style="padding:0; display:grid; grid-template-columns: 6fr 4fr; gap:0;">
             <div style="padding: 20px; border-right: 1px solid var(--border-subtle); max-height: 400px; overflow-y: auto;">
-                <div class="preview-list-header" style="margin-bottom: 12px; color:var(--tool-accent);">Extracted Material Names</div>
+                <div class="preview-list-header" style="margin-bottom: 12px; color:var(--tool-accent);">Extracted Materials (from models)</div>
                 ${extHtml || '<div class="empty-preview" style="padding:20px 0;"><span>No materials found.</span></div>'}
             </div>
             <div style="padding: 20px; max-height: 400px; overflow-y: auto;">
-                <div class="preview-list-header" style="margin-bottom: 12px; color:var(--tool-accent);">VJSON Profiles</div>
+                <div class="preview-list-header" style="margin-bottom: 12px; color:var(--tool-accent);">Configured Materials (from VJSON)</div>
                 ${vjsonHtml || '<div class="empty-preview" style="padding:20px 0;"><span>No VJSON variations mapped.</span></div>'}
             </div>
         </div>
