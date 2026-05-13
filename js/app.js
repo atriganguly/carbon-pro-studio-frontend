@@ -1319,6 +1319,10 @@ async function triggerDirectUpdater(isOverwrite) {
     const elSync = document.getElementById('input-sync_to_vjson');
     const isSyncVjsonOn = elSync ? (elSync.value === 'true') : false;
 
+    // ⚡ CAPTURE THE NEW SYNC MODE FROM EXTRACTOR UI
+    const elSyncMode = document.getElementById('input-vjson_sync_mode');
+    const syncModeVal = elSyncMode ? elSyncMode.value : 'update';
+
     let isVjsonOnly = (!hasChanges && isSyncVjsonOn);
 
     let outDir = "";
@@ -1348,6 +1352,7 @@ async function triggerDirectUpdater(isOverwrite) {
 
         const elFromExt = document.getElementById('input-from_extractor');
         if(elFromExt) elFromExt.value = "true";
+        
         const elVjsonOnly = document.getElementById('input-vjson_only_mode');
         if(elVjsonOnly) elVjsonOnly.value = isVjsonOnly ? "true" : "false";
 
@@ -1355,6 +1360,12 @@ async function triggerDirectUpdater(isOverwrite) {
         if(elSyncUpdater) {
             elSyncUpdater.value = isSyncVjsonOn ? 'true' : 'false';
             if (elSyncUpdater.type === 'checkbox') elSyncUpdater.checked = isSyncVjsonOn;
+        }
+
+        // ⚡ MAP SYNC MODE PAYLOAD INTO UPDATER DOM FOR EXECUTION
+        const elSyncModeUpdater = document.getElementById('input-vjson_sync_mode');
+        if(elSyncModeUpdater) {
+            elSyncModeUpdater.value = syncModeVal;
         }
 
         const elInput = document.getElementById('input-input_path');
