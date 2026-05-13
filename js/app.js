@@ -1122,7 +1122,7 @@ function renderExtractorResults() {
             <div class="layer-mapping-row ext-row" data-name="${name}" style="display:flex; gap:12px; align-items:center; background:var(--bg-input); padding:6px 12px; border-radius:8px; margin-bottom:6px;">
                 <div class="layer-name-tag" style="flex:0 0 auto; width:24ch; border:none; padding:0; background:transparent; font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${name}">${name}</div>
                 <div style="width:30px; text-align:center; flex-shrink:0;">${badge}</div>
-                <input type="text" class="liquid-input layer-map-input" data-original="${name}" ${syncAttr} placeholder="New name..." style="height:28px; width:24ch; flex-shrink:0; padding:0 8px; font-size:12px;">
+                <input type="text" class="liquid-input layer-map-input" data-original="${name}" ${syncAttr} placeholder="Click to edit material name" style="height:28px; width:36ch; flex-shrink:0; padding:0 8px; font-size:12px;">
                 <div class="segmented-control ext-toggle" style="height:28px; width:120px; flex-shrink:0; margin-left:auto;" ${syncAttr}>
                     <button type="button" class="segment-btn metal-toggle ${defaultTag === 'Metal' ? 'active' : ''}" data-val="Metal">Metal</button>
                     <button type="button" class="segment-btn stone-toggle ${defaultTag === 'Stone' ? 'active' : ''}" data-val="Stone">Stone</button>
