@@ -1323,6 +1323,10 @@ async function triggerDirectUpdater(isOverwrite) {
     const elSyncMode = document.getElementById('input-vjson_sync_mode');
     const syncModeVal = elSyncMode ? elSyncMode.value : 'update';
 
+    // ⚡ CAPTURE THE VJSON TEMPLATE FROM EXTRACTOR UI
+    const elVjsonTemplate = document.getElementById('input-vjson_template');
+    const vjsonTemplateVal = elVjsonTemplate ? elVjsonTemplate.value : '';
+
     let isVjsonOnly = (!hasChanges && isSyncVjsonOn);
 
     let outDir = "";
@@ -1366,6 +1370,17 @@ async function triggerDirectUpdater(isOverwrite) {
         const elSyncModeUpdater = document.getElementById('input-vjson_sync_mode');
         if(elSyncModeUpdater) {
             elSyncModeUpdater.value = syncModeVal;
+        }
+
+        // ⚡ MAP VJSON TEMPLATE PAYLOAD INTO UPDATER DOM FOR EXECUTION
+        const elVjsonTemplateUpdater = document.getElementById('input-vjson_template');
+        if(elVjsonTemplateUpdater) {
+            elVjsonTemplateUpdater.value = vjsonTemplateVal;
+            const disp = document.getElementById('display-vjson_template');
+            if(disp && vjsonTemplateVal) { 
+                disp.innerText = vjsonTemplateVal; 
+                disp.classList.add('has-value'); 
+            }
         }
 
         const elInput = document.getElementById('input-input_path');
