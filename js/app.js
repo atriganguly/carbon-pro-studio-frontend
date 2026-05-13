@@ -1118,8 +1118,15 @@ function renderExtractorResults() {
             const tooltip = files.join('&#10;');
             const badge = count > 0 ? `<span title="${tooltip}" style="font-size:9px; font-weight:700; background:var(--bg-surface-elevated); border:1px solid var(--border-subtle); padding:2px 6px; border-radius:4px; color:var(--text-secondary); cursor:help;">${count}</span>` : `<span style="font-size:9px; font-weight:700; color:var(--text-secondary); opacity:0.5;">0</span>`;
 
+            // Determine initial dot state
+            let dotClass = 'dot-unloaded';
+            if (vjsonSet.size > 0) {
+                dotClass = vjsonSet.has(name) ? 'dot-mapped' : 'dot-unmapped';
+            }
+
             return `
             <div class="layer-mapping-row ext-row" data-name="${name}" style="display:flex; gap:12px; align-items:center; background:var(--bg-input); padding:6px 12px; border-radius:8px; margin-bottom:6px;">
+                <div class="vjson-match-dot ${dotClass}"></div>
                 <div class="layer-name-tag" style="flex:0 0 auto; width:24ch; border:none; padding:0; background:transparent; font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${name}">${name}</div>
                 <div style="width:30px; text-align:center; flex-shrink:0;">${badge}</div>
                 <input type="text" class="liquid-input layer-map-input" data-original="${name}" ${syncAttr} placeholder="Click to edit material name" style="height:28px; width:36ch; flex-shrink:0; padding:0 8px; font-size:12px;">
@@ -1188,12 +1195,28 @@ function renderExtractorResults() {
         if (nameInput) {
             nameInput.addEventListener('input', function() {
                 const val = this.value.trim();
+                const oldName = row.dataset.name;
+                const effectiveName = val.length > 0 ? val : oldName;
+
                 if (val.length > 0) {
                     if (toggleGroup) toggleGroup.removeAttribute('data-sync-id');
                     this.removeAttribute('data-sync-id');
                 } else {
                     if (toggleGroup) toggleGroup.setAttribute('data-sync-id', row.dataset.name);
                     this.setAttribute('data-sync-id', row.dataset.name);
+                }
+
+                // NEW: Real-time dot update
+                const dot = row.querySelector('.vjson-match-dot');
+                if (dot) {
+                    dot.classList.remove('dot-unloaded', 'dot-mapped', 'dot-unmapped');
+                    if (vjsonSet.size === 0) {
+                        dot.classList.add('dot-unloaded');
+                    } else if (vjsonSet.has(effectiveName)) {
+                        dot.classList.add('dot-mapped');
+                    } else {
+                        dot.classList.add('dot-unmapped');
+                    }
                 }
             });
         }
