@@ -447,7 +447,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 .results-body { padding: 20px; max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
 .layer-mapping-row { display: flex; align-items: center; gap: 16px; }
 .layer-mapping-row svg { color: var(--text-secondary); opacity: 0.5; flex-shrink: 0; }
-.layer-name-tag { flex: 1; padding: 10px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: 8px; font-family: ui-monospace; font-size: 11px; color: var(--text-primary); user-select: all; }
+.layer-name-tag { flex: 1; padding: 0; background: transparent; border: none; font-family: inherit; font-size: 13px; font-weight: 600; color: var(--text-primary); user-select: all; }
 .results-footer { padding: 16px 20px; border-top: 1px solid var(--border-subtle); background: var(--bg-input); display: flex; justify-content: flex-end; gap: 10px; }
 
 .btn-secondary { background: var(--bg-surface-elevated); color: var(--text-primary); border: 1px solid var(--border-subtle); padding: 0 20px; height: 38px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; transition: 0.15s; }
