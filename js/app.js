@@ -1134,44 +1134,23 @@ function renderExtractorResults() {
 
     const copyIcon = IconFactory.getIcon('ph-copy-duotone', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>', '18px');
 
-    let card1 = '';
-    if (vjsonHtml) {
-        card1 = `
-        <div class="results-card" style="flex:1;">
-            <div class="results-header">
-                <div class="results-title">${tagIcon} VJSON Material Mapping</div>
-            </div>
-            <div class="results-body">
-                ${vjsonHtml}
-            </div>
-        </div>`;
-    }
-
-    let card2 = '';
-    if (extHtml) {
-        card2 = `
-        <div class="results-card" style="flex:1;">
-            <div class="results-header">
-                <div class="results-title">${tagIcon} Extracted Material Names</div>
-                <button class="icon-btn" id="btn-copy-layers" title="Copy extracted material names to clipboard" style="color:var(--tool-accent);">${copyIcon}</button>
-            </div>
-            <div class="results-body">
-                ${extHtml}
-            </div>
-        </div>`;
-    }
-
-    if (!vjsonHtml && !extHtml) {
-        card2 = `<div class="results-card" style="flex:1;"><div class="results-body"><div class="empty-preview" style="padding:40px 0;"><span>No taxonomy data found.</span></div></div></div>`;
-    }
-
     const html = `
-    <div id="vdb-extractor-results" style="display:flex; flex-direction:column; gap:20px; margin-top:20px;">
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; align-items: start;">
-            ${card1}
-            ${card2}
+    <div id="vdb-extractor-results" class="results-card" style="margin-top:20px;">
+        <div class="results-header">
+            <div class="results-title">${tagIcon} Taxonomy Orchestration</div>
+            <button class="icon-btn" id="btn-copy-layers" title="Copy extracted material names to clipboard" style="color:var(--tool-accent);">${copyIcon}</button>
         </div>
-        <div style="display:flex; justify-content:flex-end;">
+        <div class="results-body" style="padding:0; display:grid; grid-template-columns: 6fr 4fr; gap:0;">
+            <div style="padding: 20px; border-right: 1px solid var(--border-subtle); max-height: 400px; overflow-y: auto;">
+                <div class="preview-list-header" style="margin-bottom: 12px; color:var(--tool-accent);">Extracted Material Names</div>
+                ${extHtml || '<div class="empty-preview" style="padding:20px 0;"><span>No materials found.</span></div>'}
+            </div>
+            <div style="padding: 20px; max-height: 400px; overflow-y: auto;">
+                <div class="preview-list-header" style="margin-bottom: 12px; color:var(--tool-accent);">VJSON Profiles</div>
+                ${vjsonHtml || '<div class="empty-preview" style="padding:20px 0;"><span>No VJSON variations mapped.</span></div>'}
+            </div>
+        </div>
+        <div class="results-footer" style="gap:10px; justify-content: flex-end;">
             <button class="btn-primary" id="btn-update-layers" style="height:38px;">Apply Config</button>
         </div>
     </div>
