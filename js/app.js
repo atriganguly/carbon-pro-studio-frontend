@@ -597,13 +597,12 @@ function renderTool(tool) {
                 const btnLock = !engineConnected ? 'disabled' : '';
                 let btns = '';
 
-                // ⚡ SMART INLINE TOGGLES FOR EXTRACTOR
-                if (i.id === 'input_path' && currentTool.id === 'layer-name-extractor') {
-                    const scanInput = currentTool.inputs.find(x => x.id === 'scan_subfolders');
-                    const isActive = scanInput && scanInput.default === 'true' ? 'active' : '';
-                    const scanIcon = IconFactory.getIcon('ph-folders-duotone', '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>', '16px');
-                    btns += `<button type="button" class="path-btn path-toggle-btn ${isActive}" data-target="scan_subfolders" title="Toggle Scan Subfolders" ${btnLock}>${scanIcon}</button>`;
+                // Selective Rendering for File/Folder Picker Icons
+                if (i.type === 'file' || i.type === 'file_or_folder') {
+                    btns += `<button type="button" class="path-btn" data-target="${i.id}" data-type="file" title="Select File" ${btnLock}>${fileIcon}</button>`;
                 }
+
+                // Move VJSON Sync toggle right after "Select File" if input is vjson_template
                 if (i.id === 'vjson_template' && currentTool.id === 'layer-name-extractor') {
                     const syncInput = currentTool.inputs.find(x => x.id === 'sync_to_vjson');
                     const isActive = syncInput && syncInput.default === 'true' ? 'active' : '';
@@ -611,13 +610,18 @@ function renderTool(tool) {
                     btns += `<button type="button" class="path-btn path-toggle-btn ${isActive}" data-target="sync_to_vjson" title="Toggle VJSON Sync" ${btnLock}>${syncIcon}</button>`;
                 }
 
-                // Selective Rendering for File/Folder Picker Icons
-                if (i.type === 'file' || i.type === 'file_or_folder') {
-                    btns += `<button type="button" class="path-btn" data-target="${i.id}" data-type="file" title="Select File" ${btnLock}>${fileIcon}</button>`;
-                }
                 if (i.type === 'folder' || i.type === 'file_or_folder') {
                     btns += `<button type="button" class="path-btn" data-target="${i.id}" data-type="folder" title="Select Folder" ${btnLock}>${folderIcon}</button>`;
                 }
+
+                // Move Scan Subfolders toggle right after "Select Folder" if input is input_path
+                if (i.id === 'input_path' && currentTool.id === 'layer-name-extractor') {
+                    const scanInput = currentTool.inputs.find(x => x.id === 'scan_subfolders');
+                    const isActive = scanInput && scanInput.default === 'true' ? 'active' : '';
+                    const scanIcon = IconFactory.getIcon('ph-folders-duotone', '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>', '16px');
+                    btns += `<button type="button" class="path-btn path-toggle-btn ${isActive}" data-target="scan_subfolders" title="Toggle Scan Subfolders" ${btnLock}>${scanIcon}</button>`;
+                }
+
                 ctrl = `<input type="hidden" id="input-${i.id}" value="${i.default}" class="app-input"><div class="path-picker-group"><div class="path-display" id="display-${i.id}">${i.default || 'No source selected...'}</div><div class="path-btn-group">${btns}</div></div>`;
             } else { 
                 const typeAttr = i.type === 'range' ? 'range' : (i.type === 'password' ? 'password' : 'text');
@@ -1100,11 +1104,7 @@ function renderExtractorResults() {
                 </div>
             </div>`;
         }).join('');
-        vjsonHtml = `
-        <div style="margin-bottom: 24px;">
-            <div class="preview-list-header" style="margin-bottom: 8px; color:var(--tool-accent);">VJSON Material Mapping</div>
-            ${rows}
-        </div>`;
+        vjsonHtml = rows;
     }
 
     // ⚡ CONTAINER 2: EXTRACTED MATERIAL NAMES
@@ -1129,30 +1129,49 @@ function renderExtractorResults() {
                 </div>
             </div>`;
         }).join('');
-        extHtml = `
-        <div>
-            <div class="preview-list-header" style="margin-bottom: 8px; color:var(--tool-accent);">Extracted Material Names</div>
-            ${rows}
-        </div>`;
-    }
-
-    if (!vjsonHtml && !extHtml) {
-        extHtml = `<div class="empty-preview" style="padding:40px 0;"><span>No taxonomy data found.</span></div>`;
+        extHtml = rows;
     }
 
     const copyIcon = IconFactory.getIcon('ph-copy-duotone', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>', '18px');
 
+    let card1 = '';
+    if (vjsonHtml) {
+        card1 = `
+        <div class="results-card" style="flex:1;">
+            <div class="results-header">
+                <div class="results-title">${tagIcon} VJSON Material Mapping</div>
+            </div>
+            <div class="results-body">
+                ${vjsonHtml}
+            </div>
+        </div>`;
+    }
+
+    let card2 = '';
+    if (extHtml) {
+        card2 = `
+        <div class="results-card" style="flex:1;">
+            <div class="results-header">
+                <div class="results-title">${tagIcon} Extracted Material Names</div>
+                <button class="icon-btn" id="btn-copy-layers" title="Copy extracted material names to clipboard" style="color:var(--tool-accent);">${copyIcon}</button>
+            </div>
+            <div class="results-body">
+                ${extHtml}
+            </div>
+        </div>`;
+    }
+
+    if (!vjsonHtml && !extHtml) {
+        card2 = `<div class="results-card" style="flex:1;"><div class="results-body"><div class="empty-preview" style="padding:40px 0;"><span>No taxonomy data found.</span></div></div></div>`;
+    }
+
     const html = `
-    <div id="vdb-extractor-results" class="results-card" style="margin-top:20px;">
-        <div class="results-header">
-            <div class="results-title">${tagIcon} Taxonomy Configuration</div>
-            <button class="icon-btn" id="btn-copy-layers" title="Copy extracted material names to clipboard" style="color:var(--tool-accent);">${copyIcon}</button>
+    <div id="vdb-extractor-results" style="display:flex; flex-direction:column; gap:20px; margin-top:20px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; align-items: start;">
+            ${card1}
+            ${card2}
         </div>
-        <div class="results-body">
-            ${vjsonHtml}
-            ${extHtml}
-        </div>
-        <div class="results-footer" style="gap:10px; justify-content: flex-end;">
+        <div style="display:flex; justify-content:flex-end;">
             <button class="btn-primary" id="btn-update-layers" style="height:38px;">Apply Config</button>
         </div>
     </div>
@@ -1201,16 +1220,20 @@ function renderExtractorResults() {
         }
     });
 
-    document.getElementById('btn-copy-layers').addEventListener('click', () => {
-        let textToCopy = "=== VDB CARBON: LAYER & MATERIAL REPORT ===\n\n";
-        const sortedKeys = Array.from(extMap.keys()).sort();
-        sortedKeys.forEach(layer => {
-            const fileCount = extMap.get(layer).length;
-            textToCopy += `- ${layer} (Found in ${fileCount} files)\n`;
+    const copyBtn = document.getElementById('btn-copy-layers');
+    if (copyBtn) {
+        copyBtn.addEventListener('click', () => {
+            let textToCopy = "=== VDB CARBON: LAYER & MATERIAL REPORT ===\n\n";
+            const sortedKeys = Array.from(extMap.keys()).sort();
+            sortedKeys.forEach(layer => {
+                const fileCount = extMap.get(layer).length;
+                textToCopy += `- ${layer} (Found in ${fileCount} files)\n`;
+            });
+            navigator.clipboard.writeText(textToCopy);
+            showToast("Copied extracted material names to clipboard!", "success");
         });
-        navigator.clipboard.writeText(textToCopy);
-        showToast("Copied extracted material names to clipboard!", "success");
-    });
+    }
+    
     document.getElementById('btn-update-layers').addEventListener('click', showOverwriteModal);
 }
 
