@@ -1,7 +1,7 @@
 {
   "app_name": "Carbon Pro-Studio",
-  "version": "1.2.5",
-  "last_updated": "2026-05-13 - Extractor UI Split & Active State Styling",
+  "version": "1.2.6",
+  "last_updated": "2026-05-13 - Real-time VJSON Mapping Indicators",
   "creator": "Atri Ganguly",
   "github_link": "https://github.com/atriganguly",
   "tagline": "Brilliance, Orchestrated.",
@@ -10,6 +10,6 @@
   "roadmap": [
     { "phase": "Priority 1", "title": "Security & Perf: Distributed Engine Throttling & Payload Encryption", "status": "active" },
     { "phase": "Priority 2", "title": "Feature Upgrade: Generative AI Video Compositing Integration", "status": "planned" },
-    { "phase": "Priority 3", "title": "UI/UX: Spatial Viewport Gizmos & Custom HUD Theming", "status": "planned" }
+    { "phase": "Priority 3", "title": "UI/UX: Spatial Viewport Gizmos & Custom HUD Theming", "status": "active" }
   ]
 }
