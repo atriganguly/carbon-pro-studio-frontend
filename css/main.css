@@ -342,9 +342,13 @@ svg { display: block; max-width: 100%; max-height: 100%; }
 
 /* ⚡ INLINE TOGGLE CSS ⚡ */
 .path-btn.path-toggle-btn.active {
-    color: var(--success);
-    background: var(--bg-input-hover);
-    border-color: color-mix(in srgb, var(--success) 30%, transparent);
+    color: #ffffff !important;
+    background: var(--success) !important;
+    border-color: var(--success) !important;
+}
+
+.path-btn.path-toggle-btn.active:hover {
+    filter: brightness(1.1);
 }
 
 .toggle-switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; display: inline-block; }
